@@ -1,4 +1,4 @@
-const matrix_directory = Pkg.dir("CSparse", "Matrix")
+const matrix_directory = Pkg.dir("CSparse", "test", "Matrix")
 
 function testmat(nm)
     fd = open(joinpath(matrix_directory, nm), "r")

@@ -11,7 +11,7 @@ function specialize(A::SparseMatrixCSC)
     A
 end
 
-cd(joinpath(dirname(@__FILE__),"..","Matrix")) do
+cd("Matrix") do
     global mats = [specialize(testmat(nm)) for nm in readdir()]
 end
 
