@@ -1,13 +1,10 @@
 module CSparse
 
-    using Metis
-    
-    export testmat
+using Metis
 
-    include("utilities.jl")
-    include("testmat.jl")
-    include("simplicialchol.jl")
-    include("trisolvers.jl")
+include("utilities.jl")
+include("simplicialchol.jl")
+include("trisolvers.jl")
 
 
 ## Replace calls to these simple functions by negation, abs, etc.

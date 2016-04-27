@@ -1,6 +1,8 @@
 using Metis, CSparse, Compat
 using Base.Test
 
+include("testmat.jl")
+
 function specialize(A::SparseMatrixCSC)
     issymmetric(A) && return Symmetric(triu!(A),:U)
     ishermitian(A) && return Hermitian(triu!(A),:U)
