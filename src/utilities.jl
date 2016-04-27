@@ -1,4 +1,4 @@
-function Base.etree{Tv,Ti}(A::Symmetric{Tv,SparseMatrixCSC{Tv,Ti}},postorder::Bool=false)
+function etree{Tv,Ti}(A::Symmetric{Tv,SparseMatrixCSC{Tv,Ti}},postorder::Bool=false)
     etree(A.uplo == 'U' ? A.data : A.data', postorder)
 end
 

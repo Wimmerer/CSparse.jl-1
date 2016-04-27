@@ -89,30 +89,59 @@ function js_dfs{T}(j::Integer, G::SparseMatrixCSC{T}, top::Integer,
     top
 end
 
-# compute the etree of A (using triu(A), or A'A without forming A'A
-# A root of the etree (which may be a forest) is indicated by 0
-function js_etree{Tv,Ti}(A::SparseMatrixCSC{Tv,Ti}, ata::Bool)
-    m,n = size(A); Ap = A.colptr; Ai = A.rowval
-    parent = zeros(Ti, n); w = zeros(Ti, n + (ata ? m : 0))
-    ancestor = 0; prev = n              # offsets into w
-    if (ata) w[prev + (1:m)] = 0 end
-    for k in 1:n
-        parent[k] = 0                   # node k has no parent yet
-        w[ancestor + k] = 0             # nor does k have an ancestor
-        for p in Ap[k]:(Ap[k+1] - 1)
-            i = ata ? w[Ai[p] + prev] : Ai[p]
-            while i != 0 && i < k
-                inext = w[ancestor + i] # inext = ancestor of i
-                w[ancestor + i] = k     # path compression
-                if (inext == 0) parent[i] = k end # no anc., parent is k
-                i = inext
-            end
-            if (ata) w[Ai[p] + prev] = k end
+# Compute the elimination tree of A using triu(A) returning the parent vector.
+# A root node is indicated by 0. This tree may actually be a forest in that
+# there may be more than one root, indicating complete separability.
+# A trivial example is speye(n, n) in which every node is a root.
+function etree{Tv,Ti}(A::SparseMatrixCSC{Tv,Ti}, postorder::Bool)
+    m,n = size(A)
+    Ap = A.colptr
+    Ai = A.rowval
+    parent = zeros(Ti, n)
+    ancestor = zeros(Ti, n)
+    for k in 1:n, p in Ap[k]:(Ap[k+1] - 1)
+        i = Ai[p]
+        while i != 0 && i < k
+            inext = ancestor[i] # inext = ancestor of i
+            ancestor[i] = k     # path compression
+            if (inext == 0) parent[i] = k end # no anc., parent is k
+            i = inext
         end
     end
-    parent
+    if !postorder return parent end
+    head = zeros(Ti,n)                   # empty linked lists
+    next = zeros(Ti,n)
+    for j in n:-1:1                      # traverse in reverse order
+        if (parent[j] == 0); continue; end # j is a root
+        next[j] = head[parent[j]]        # add j to list of its parent
+        head[parent[j]] = j
+    end
+    stack = Ti[]
+    sizehint!(stack, n)
+    post = zeros(Ti,n)
+    k = 1
+    for j in 1:n
+        if (parent[j] != 0) continue end # skip j if it is not a root
+        push!(stack, j)                  # place j on the stack
+        while (!isempty(stack))        # while (stack is not empty)
+            p = stack[end]               # p = top of stack
+            i = head[p]                  # i = youngest child of p
+            if (i == 0)
+                pop!(stack)
+                post[k] = p       # node p is the kth postordered node
+                k += 1
+            else
+            head[p] = next[i]           # remove i from children of p
+            push!(stack, i)
+            end
+        end
+    end
+    parent, post
 end
 
+etree(A::SparseMatrixCSC) = etree(A, false)
+
+js_etree{Tv,Ti}(A::SparseMatrixCSC{Tv,Ti}, ata::Bool) = etree(A, ata)
 js_etree(A::SparseMatrixCSC) = js_etree(A, false)
 
 
@@ -301,7 +330,7 @@ function cs_qrsol{T<:Union{Float64,Complex128}}(A::SparseMatrixCSC{T}, b::Vector
     cs_qrsol(A, copy(b), 3)
 end
 
-for (amd, etree, post, counts, norm, vtyp, ityp) in
+for (amd, _etree, post, counts, norm, vtyp, ityp) in
     ((:cs_ci_amd, :cs_ci_etree, :cs_ci_post, :cs_ci_counts, :cs_ci_norm, :Complex128, :Int32),
      (:cs_di_amd, :cs_di_etree, :cs_di_post, :cs_di_counts, :cs_di_norm, :Float64, :Int32),
      (:cs_cl_amd, :cs_cl_etree, :cs_cl_post, :cs_cl_counts, :cs_cl_norm, :Complex128, :Int64),
@@ -320,7 +349,7 @@ for (amd, etree, post, counts, norm, vtyp, ityp) in
         function cs_counts(A::SparseMatrixCSC{$vtyp,$ityp}, col::Bool)
             n = size(A, 2)
             cspk = pack(cs(_jl_convert_to_0_based_indexing!(A)))
-            etrpt = ccall(($(string(etree)),"libcxsparse"), Ptr{$ityp},
+            etrpt = ccall(($(string(_etree)),"libcxsparse"), Ptr{$ityp},
                           (Ptr{Void}, $ityp), cspk.data, col)
             pospt = ccall(($(string(post)),"libcxsparse"), Ptr{$ityp},
                           (Ptr{$ityp}, $ityp), etrpt, n)
@@ -334,7 +363,7 @@ for (amd, etree, post, counts, norm, vtyp, ityp) in
         
         ## returns the elimination tree and the post-ordering permutation
         function cs_etree(A::SparseMatrixCSC{$vtyp,$ityp}, col::Bool)
-            ept = ccall(($(string(etree)),"libcxsparse"), Ptr{$ityp}, (Ptr{Void}, $ityp),
+            ept = ccall(($(string(_etree)),"libcxsparse"), Ptr{$ityp}, (Ptr{Void}, $ityp),
                         pack(cs(_jl_convert_to_0_based_indexing!(A))).data, col)
             _jl_convert_to_1_based_indexing!(A)
             n = size(A, 2)
