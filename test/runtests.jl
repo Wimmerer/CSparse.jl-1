@@ -48,6 +48,22 @@ const sc2 = symperm(sc1,iperm1)
 const tr2,postperm = etree(sc2,true)
 const sc3 = symperm(sc2,invperm(postperm))
 const tr3 = etree(sc3)
-@show(tr1)
-@show(tr2)
-@show(tr3)
+
+# elimination tree
+## upper triangle of the pattern test matrix from Figure 4.2 of
+## "Direct Methods for Sparse Linear Systems" by Tim Davis, SIAM, 2006
+rowval = Int32[1,2,2,3,4,5,1,4,6,1,7,2,5,8,6,9,3,4,6,8,10,3,5,7,8,10,11]
+colval = Int32[1,2,3,3,4,5,6,6,6,7,7,8,8,8,9,9,10,10,10,10,10,11,11,11,11,11,11]
+A = sparse(rowval, colval, ones(length(rowval)))
+p = etree(A)
+P,post = etree(A, true)
+@test P == p
+@test P == Int32[6,3,8,6,8,7,9,10,10,11,0]
+@test post == Int32[2,3,5,8,1,4,6,7,9,10,11]
+@test isperm(post)
+
+# csc_permute
+A = sprand(10,10,0.2)
+p = randperm(10)
+q = randperm(10)
+@test CSparse.csc_permute(A, invperm(p), q) == full(A)[p, q]

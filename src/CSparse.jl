@@ -414,4 +414,38 @@ end
 cs_schol(A::SparseMatrixCSC) = cs_schol(A, 1)
 cs_sqr(A::SparseMatrixCSC) = cs_sqr(A, 3)
 
+# based on cs_permute p. 21, "Direct Methods for Sparse Linear Systems"
+function csc_permute{Tv,Ti}(A::SparseMatrixCSC{Tv,Ti}, pinv::Vector{Ti}, q::Vector{Ti})
+    m, n = size(A)
+    Ap = A.colptr
+    Ai = A.rowval
+    Ax = A.nzval
+    lpinv = length(pinv)
+    if m != lpinv
+        throw(DimensionMismatch(
+            "the number of rows of sparse matrix A must equal the length of pinv, $m != $lpinv"))
+    end
+    lq = length(q)
+    if n != lq
+        throw(DimensionMismatch(
+            "the number of columns of sparse matrix A must equal the length of q, $n != $lq"))
+    end
+    if !isperm(pinv) || !isperm(q)
+        throw(ArgumentError("both pinv and q must be permutations"))
+    end
+    C = copy(A); Cp = C.colptr; Ci = C.rowval; Cx = C.nzval
+    nz = one(Ti)
+    for k in 1:n
+        Cp[k] = nz
+        j = q[k]
+        for t = Ap[j]:(Ap[j+1]-1)
+            Cx[nz] = Ax[t]
+            Ci[nz] = pinv[Ai[t]]
+            nz += one(Ti)
+        end
+    end
+    Cp[n + 1] = nz
+    (C.').' # double transpose to order the columns
+end
+
 end
