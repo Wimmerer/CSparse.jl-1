@@ -1,6 +1,8 @@
 CSparse.jl
 ==========
 
+[![Build Status](https://travis-ci.org/JuliaSparse/CSparse.jl.svg?branch=master)](https://travis-ci.org/JuliaSparse/CSparse.jl)
+
 A [Julia](http://julialang.org) implementation of some of the functions in the
 [CSparse](http://www.cise.ufl.edu/research/sparse/CSparse) and
 [CXSparse](http://www.cise.ufl.edu/research/sparse/CXSparse/)
