@@ -74,5 +74,5 @@ q = randperm(10)
 # symperm
 srand(1234321)
 A = triu(sprand(10,10,0.2))       # symperm operates on upper triangle
-perm = randperm(10)
+perm = [10,6,1,9,5,3,7,8,4,2]
 @test symperm(A,perm).colptr == [1,1,2,4,5,5,6,8,8,9,10]
