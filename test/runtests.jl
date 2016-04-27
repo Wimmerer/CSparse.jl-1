@@ -1,8 +1,8 @@
-using Metis,CSparse
+using Metis, CSparse, Compat
 using Base.Test
 
 function specialize(A::SparseMatrixCSC)
-    issym(A) && return Symmetric(triu!(A),:U)
+    issymmetric(A) && return Symmetric(triu!(A),:U)
     ishermitian(A) && return Hermitian(triu!(A),:U)
     istril(A) && return LowerTriangular(A)
     istriu(A) && return UpperTriangular(A)

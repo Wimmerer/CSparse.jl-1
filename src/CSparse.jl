@@ -1,7 +1,7 @@
 module CSparse
 
     using Metis
-
+    
     export testmat
 
     include("utilities.jl")
@@ -78,7 +78,8 @@ function js_dfs{T}(j::Integer, G::SparseMatrixCSC{T}, top::Integer,
             i = Gi[p]                   # consider neighbor node i
             if (JS_MARKED(Gp, i)) continue end # skip visited node i
             pstack[head] = p      # pause depth-first search of node j
-            xi[++head] = i        # start dfs at node i
+            head += 1
+            xi[head] = i        # start dfs at node i
             done = 0              # node j is not done
             break                 # break, to start dfs[i]
         end
@@ -119,7 +120,7 @@ js_etree(A::SparseMatrixCSC) = js_etree(A, false)
 
 
 ## post order a forest
-function js_post{T<:Union(Int32,Int64)}(parent::Vector{T})
+function js_post{T<:Union{Int32,Int64}}(parent::Vector{T})
     n = length(parent)
     head = zeros(T,n)                   # empty linked lists
     next = zeros(T,n)
@@ -156,7 +157,7 @@ end
 
 
 # depth-first search and postorder of a tree rooted at node j
-function js_tdfs{T<:Union(Int32,Int64)}(j::Integer, k::Integer, head::Vector{T},
+function js_tdfs{T<:Union{Int32,Int64}}(j::Integer, k::Integer, head::Vector{T},
                  next::Vector{T}, post::Vector{T}, stack::Vector{T})
     top = 1
     stack[1] = j                        # place j on the stack
@@ -209,7 +210,7 @@ end
 _jl_convert_to_0_based_indexing(S) = _jl_convert_to_0_based_indexing!(copy(S))
 _jl_convert_to_1_based_indexing(S) = _jl_convert_to_1_based_indexing!(copy(S))
 
-type cs{Tv<:Union(Float64,Complex128),Ti<:Union(Int32,Int64)} # the CXSparse cs struct
+type cs{Tv<:Union{Float64,Complex128},Ti<:Union{Int32,Int64}} # the CXSparse cs struct
     nzmax::Ti
     m::Ti
     n::Ti
@@ -219,7 +220,7 @@ type cs{Tv<:Union(Float64,Complex128),Ti<:Union(Int32,Int64)} # the CXSparse cs 
     nz::Ti
 end
 
-function cs{Tv<:Union(Float64,Complex128),Ti<:Union(Int32,Int64)}(A::SparseMatrixCSC{Tv,Ti})
+function cs{Tv<:Union{Float64,Complex128},Ti<:Union{Int32,Int64}}(A::SparseMatrixCSC{Tv,Ti})
     if A.colptr[1] != 0 error("Sparse matrix must be in 0-based indexing") end
     cs{Tv,Ti}(convert(Ti,A.colptr[end]), convert(Ti,A.m), convert(Ti,A.n),
               pointer(A.colptr), pointer(A.rowval), pointer(A.nzval), convert(Ti, -1))
@@ -277,29 +278,29 @@ for (cholsol, lusol, prt, qrsol, vtyp, ityp) in
 end
 
 ## default ordering for cs_cholsol is 1 (i.e. amd(A))
-cs_cholsol!{T<:Union(Float64,Complex128)}(A::SparseMatrixCSC{T}, b::Vector{T}) = cs_cholsol!(A, b, 1)
-function cs_cholsol{T<:Union(Float64,Complex128)}(A::SparseMatrixCSC{T}, b::Vector{T}, ord::Integer)
+cs_cholsol!{T<:Union{Float64,Complex128}}(A::SparseMatrixCSC{T}, b::Vector{T}) = cs_cholsol!(A, b, 1)
+function cs_cholsol{T<:Union{Float64,Complex128}}(A::SparseMatrixCSC{T}, b::Vector{T}, ord::Integer)
     cs_cholsol!(A, copy(b), ord)
 end
-function cs_cholsol{T<:Union(Float64,Complex128)}(A::SparseMatrixCSC{T}, b::Vector{T})
+function cs_cholsol{T<:Union{Float64,Complex128}}(A::SparseMatrixCSC{T}, b::Vector{T})
     cs_cholsol(A, copy(b), 1)
 end
 
 ## default ordering for cs_lusol is 2.
 ## There are other cases with order=1 but I haven't yet deciphered them
-cs_lusol!{T<:Union(Float64,Complex128)}(A::SparseMatrixCSC{T}, b::Vector{T}) = cs_lusol!(A, b, 2, 1.)
-function cs_lusol{T<:Union(Float64,Complex128)}(A::SparseMatrixCSC{T}, b::Vector{T}, ord::Integer)
+cs_lusol!{T<:Union{Float64,Complex128}}(A::SparseMatrixCSC{T}, b::Vector{T}) = cs_lusol!(A, b, 2, 1.)
+function cs_lusol{T<:Union{Float64,Complex128}}(A::SparseMatrixCSC{T}, b::Vector{T}, ord::Integer)
     cs_lusol!(A, copy(b), ord, ord == 1 ? 0.001 : 1.)
 end
-function cs_lusol{T<:Union(Float64,Complex128)}(A::SparseMatrixCSC{T}, b::Vector{T})
+function cs_lusol{T<:Union{Float64,Complex128}}(A::SparseMatrixCSC{T}, b::Vector{T})
     cs_lusol!(A, copy(b), 2, 1.)
 end
 
-cs_qrsol!{T<:Union(Float64,Complex128)}(A::SparseMatrixCSC{T}, b::Vector{T}) = cs_lusol!(A, b, 3)
-function cs_qrsol{T<:Union(Float64,Complex128)}(A::SparseMatrixCSC{T}, b::Vector{T}, ord::Integer)
+cs_qrsol!{T<:Union{Float64,Complex128}}(A::SparseMatrixCSC{T}, b::Vector{T}) = cs_lusol!(A, b, 3)
+function cs_qrsol{T<:Union{Float64,Complex128}}(A::SparseMatrixCSC{T}, b::Vector{T}, ord::Integer)
     cs_qrsol!(A, copy(b), ord)
 end
-function cs_qrsol{T<:Union(Float64,Complex128)}(A::SparseMatrixCSC{T}, b::Vector{T})
+function cs_qrsol{T<:Union{Float64,Complex128}}(A::SparseMatrixCSC{T}, b::Vector{T})
     cs_qrsol(A, copy(b), 3)
 end
 
@@ -360,7 +361,7 @@ cs_counts(A::SparseMatrixCSC) = cs_counts(A, false)
 cs_etree(A::SparseMatrixCSC) = cs_etree(A, false)
 cs_print(A::SparseMatrixCSC) = cs_print(A, true)
 
-type cs_symb{Tv<:Union(Float64,Complex128),Ti<:Union(Int32,Int64)} # the CXSparse cs_symbolic struct
+type cs_symb{Tv<:Union{Float64,Complex128},Ti<:Union{Int32,Int64}} # the CXSparse cs_symbolic struct
     pinv::Ptr{Ti}
     q::Ptr{Ti}
     parent::Ptr{Ti}
@@ -371,7 +372,7 @@ type cs_symb{Tv<:Union(Float64,Complex128),Ti<:Union(Int32,Int64)} # the CXSpars
     unz::Float64
 end
 
-type cs_num{Tv<:Union(Float64,Complex128),Ti<:Union(Int32,Int64)} # the CXSparse cs_numeric struct
+type cs_num{Tv<:Union{Float64,Complex128},Ti<:Union{Int32,Int64}} # the CXSparse cs_numeric struct
     L::Ptr{cs{Tv,Ti}}
     U::Ptr{cs{Tv,Ti}}
     pinv::Ptr{Ti}
