@@ -2,6 +2,8 @@ module CSparse
 
 using Metis
 
+export etree, symperm
+
 include("utilities.jl")
 include("simplicialchol.jl")
 include("trisolvers.jl")
