@@ -448,4 +448,53 @@ function csc_permute{Tv,Ti}(A::SparseMatrixCSC{Tv,Ti}, pinv::Vector{Ti}, q::Vect
     (C.').' # double transpose to order the columns
 end
 
+# based on cs_symperm p. 21, "Direct Methods for Sparse Linear Systems"
+# form A[p,p] for a symmetric A stored in the upper triangle
+"""
+    symperm(A, p)
+Return the symmetric permutation of `A`, which is `A[p,p]`. `A` should be
+symmetric, sparse, and only contain nonzeros in the upper triangular part of the
+matrix is stored. This algorithm ignores the lower triangular part of the
+matrix. Only the upper triangular part of the result is returned.
+"""
+function symperm{Tv,Ti}(A::SparseMatrixCSC{Tv,Ti}, pinv::Vector{Ti})
+    m, n = size(A)
+    if m != n
+        throw(DimensionMismatch("sparse matrix A must be square"))
+    end
+    Ap = A.colptr
+    Ai = A.rowval
+    Ax = A.nzval
+    if !isperm(pinv)
+        throw(ArgumentError("pinv must be a permutation"))
+    end
+    lpinv = length(pinv)
+    if n != lpinv
+        throw(DimensionMismatch(
+            "dimensions of sparse matrix A must equal the length of pinv, $((m,n)) != $lpinv"))
+    end
+    C = copy(A); Cp = C.colptr; Ci = C.rowval; Cx = C.nzval
+    w = zeros(Ti,n)
+    for j in 1:n  # count entries in each column of C
+        j2 = pinv[j]
+        for p in Ap[j]:(Ap[j+1]-1)
+            (i = Ai[p]) > j || (w[max(pinv[i],j2)] += one(Ti))
+        end
+    end
+    Cp[:] = cumsum(vcat(one(Ti),w))
+    copy!(w,Cp[1:n]) # needed to be consistent with cs_cumsum
+    for j in 1:n
+        j2 = pinv[j]
+        for p = Ap[j]:(Ap[j+1]-1)
+            (i = Ai[p]) > j && continue
+            i2 = pinv[i]
+            ind = max(i2,j2)
+            Ci[q = w[ind]] = min(i2,j2)
+            w[ind] += 1
+            Cx[q] = Ax[p]
+        end
+    end
+    (C.').' # double transpose to order the columns
+end
+
 end

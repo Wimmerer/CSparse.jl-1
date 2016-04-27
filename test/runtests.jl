@@ -48,6 +48,9 @@ const sc2 = symperm(sc1,iperm1)
 const tr2,postperm = etree(sc2,true)
 const sc3 = symperm(sc2,invperm(postperm))
 const tr3 = etree(sc3)
+@show(tr1)
+@show(tr2)
+@show(tr3)
 
 # elimination tree
 ## upper triangle of the pattern test matrix from Figure 4.2 of
@@ -67,3 +70,9 @@ A = sprand(10,10,0.2)
 p = randperm(10)
 q = randperm(10)
 @test CSparse.csc_permute(A, invperm(p), q) == full(A)[p, q]
+
+# symperm
+srand(1234321)
+A = triu(sprand(10,10,0.2))       # symperm operates on upper triangle
+perm = randperm(10)
+@test symperm(A,perm).colptr == [1,1,2,4,5,5,6,8,8,9,10]
