@@ -33,6 +33,25 @@ function ereach{Tv,Ti}(A::Symmetric{Tv,SparseMatrixCSC{Tv,Ti}}, k, parent)
     collect(s)
 end
 
+# find nonzero pattern of Cholesky L[k,1:k-1] using etree and triu(A[:,k])
+# based on cs_ereach p. 43, "Direct Methods for Sparse Linear Systems"
+function ereach{Tv,Ti}(A::SparseMatrixCSC{Tv,Ti}, k::Integer, parent::Vector{Ti})
+    m,n = size(A); Ap = A.colptr; Ai = A.rowval
+    s = Ti[]; sizehint!(s, n)            # to be used as a stack
+    visited = falses(n)
+    visited[k] = true
+    for p in Ap[k]:(Ap[k+1] - 1)
+        i = Ai[p]                # A[i,k] is nonzero
+        if i > k continue end    # only use upper triangular part of A
+        while !visited[i]        # traverse up etree
+            push!(s,i)           # L[k,i] is nonzero
+            visited[i] = true
+            i = parent[i]
+        end
+    end
+    s
+end
+
 @doc """
 Determine the pattern of the sparse Cholesky factor of C
 
