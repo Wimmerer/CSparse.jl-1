@@ -43,11 +43,11 @@ const bc16t = mats[3]'
 
 const sc1 = Symmetric(triu(mats[2].data'mats[2].data),:U)
 const perm1,iperm1 = nodeND(sc1)
-const tr1 = CSparse.etree(sc1)
+const tr1 = etree(sc1)
 const sc2 = symperm(sc1,iperm1)
-const tr2,postperm = CSparse.etree(sc2,true)
+const tr2,postperm = etree(sc2,true)
 const sc3 = symperm(sc2,invperm(postperm))
-const tr3 = CSparse.etree(sc3)
+const tr3 = etree(sc3)
 @show(tr1)
 @show(tr2)
 @show(tr3)
@@ -58,8 +58,8 @@ const tr3 = CSparse.etree(sc3)
 rowval = Int32[1,2,2,3,4,5,1,4,6,1,7,2,5,8,6,9,3,4,6,8,10,3,5,7,8,10,11]
 colval = Int32[1,2,3,3,4,5,6,6,6,7,7,8,8,8,9,9,10,10,10,10,10,11,11,11,11,11,11]
 A = sparse(rowval, colval, ones(length(rowval)))
-p = CSparse.etree(A)
-P,post = CSparse.etree(A, true)
+p = etree(A)
+P,post = etree(A, true)
 @test P == p
 @test P == Int32[6,3,8,6,8,7,9,10,10,11,0]
 @test post == Int32[2,3,5,8,1,4,6,7,9,10,11]

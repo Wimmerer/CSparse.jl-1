@@ -2,7 +2,7 @@ module CSparse
 
 using Metis
 
-export etree, symperm
+import Base: etree, symperm
 
 include("utilities.jl")
 include("simplicialchol.jl")
